@@ -17,6 +17,13 @@ export default function App() {
   const [showLabels, setShowLabels] = useState(true);
   const [downloaded, setDownloaded] = useState(false);
   const [zipping, setZipping] = useState(false);
+  const [zipHint, setZipHint] = useState(true);
+
+  /* короткая пульсация кнопки «Проект ZIP», чтобы её было легко найти */
+  useEffect(() => {
+    const t = setTimeout(() => setZipHint(false), 7500);
+    return () => clearTimeout(t);
+  }, []);
 
   /** Упаковать весь проект в ZIP и скачать */
   const handleZip = async () => {
@@ -137,6 +144,8 @@ export default function App() {
             disabled={zipping}
             title="Скачать весь проект (все исходники) одним ZIP-архивом"
             className={`pointer-events-auto mr-2 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 active:scale-95 md:text-[11px] ${
+              zipHint && !zipping ? "zip-hint" : ""
+            } ${
               zipping
                 ? "border-mist-500/40 bg-white/5 text-mist-400"
                 : "border-white/15 bg-white/[0.06] text-mist-100 hover:border-solar-400/60 hover:bg-solar-400/10 hover:text-solar-300 hover:shadow-[0_0_22px_rgba(242,181,68,0.2)]"
