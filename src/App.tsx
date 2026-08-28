@@ -14,6 +14,30 @@ export default function App() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [showOrbits, setShowOrbits] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
+  const [downloaded, setDownloaded] = useState(false);
+
+  /** Скачать автономную HTML-версию (public/standalone.html) одним кликом */
+  const handleDownload = async () => {
+    try {
+      const res = await fetch("standalone.html");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const blob = new Blob([text], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "orrery-standalone.html";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setDownloaded(true);
+      setTimeout(() => setDownloaded(false), 2600);
+    } catch {
+      // если файл недоступен — открываем его в новой вкладке, чтобы сохранить вручную
+      window.open("standalone.html", "_blank");
+    }
+  };
 
   const playingRef = useRef(playing);
   const speedRef = useRef(speed);
@@ -95,6 +119,27 @@ export default function App() {
         </div>
 
         <div className="fade-up text-right" style={{ animationDelay: "0.12s" }}>
+          <button
+            onClick={handleDownload}
+            title="Скачать автономную версию одним HTML-файлом — работает без установки, просто откройте файл в браузере"
+            className={`group pointer-events-auto mb-2.5 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 active:scale-95 md:text-[11px] ${
+              downloaded
+                ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
+                : "border-solar-400/35 bg-solar-400/[0.08] text-solar-300 hover:border-solar-400/70 hover:bg-solar-400/15 hover:shadow-[0_0_22px_rgba(242,181,68,0.28)]"
+            }`}
+          >
+            {downloaded ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12.5 9.5 18 20 6.5" />
+              </svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-200 group-hover:translate-y-0.5">
+                <path d="M12 3v11m0 0 4.2-4.2M12 14 7.8 9.8" />
+                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+              </svg>
+            )}
+            <span>{downloaded ? "Сохранено" : "HTML-версия"}</span>
+          </button>
           <div className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-mist-500">Прошло времени</div>
           <div className="font-display mt-1 text-sm font-bold tabular-nums leading-none text-mist-100 md:text-lg">
             {formatElapsed(simDays)}
