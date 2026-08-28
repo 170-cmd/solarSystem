@@ -5,6 +5,7 @@ import InfoPanel from "./components/InfoPanel";
 import Controls from "./components/Controls";
 import { BASE_DAYS_PER_SECOND, BODIES } from "./data/bodies";
 import { formatElapsed, plural } from "./utils";
+import { downloadProjectZip } from "./projectExport";
 
 export default function App() {
   const [simDays, setSimDays] = useState(0);
@@ -15,6 +16,18 @@ export default function App() {
   const [showOrbits, setShowOrbits] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [downloaded, setDownloaded] = useState(false);
+  const [zipping, setZipping] = useState(false);
+
+  /** Упаковать весь проект в ZIP и скачать */
+  const handleZip = async () => {
+    if (zipping) return;
+    try {
+      setZipping(true);
+      await downloadProjectZip();
+    } finally {
+      setZipping(false);
+    }
+  };
 
   /** Скачать автономную HTML-версию (public/standalone.html) одним кликом */
   const handleDownload = async () => {
@@ -119,6 +132,28 @@ export default function App() {
         </div>
 
         <div className="fade-up text-right" style={{ animationDelay: "0.12s" }}>
+          <button
+            onClick={handleZip}
+            disabled={zipping}
+            title="Скачать весь проект (все исходники) одним ZIP-архивом"
+            className={`pointer-events-auto mr-2 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 active:scale-95 md:text-[11px] ${
+              zipping
+                ? "border-mist-500/40 bg-white/5 text-mist-400"
+                : "border-white/15 bg-white/[0.06] text-mist-100 hover:border-solar-400/60 hover:bg-solar-400/10 hover:text-solar-300 hover:shadow-[0_0_22px_rgba(242,181,68,0.2)]"
+            }`}
+          >
+            {zipping ? (
+              <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                <path d="M21 12a9 9 0 1 1-6.2-8.56" />
+              </svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 8V6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" />
+                <path d="M12 11v5m0 0 2-2m-2 2-2-2" />
+              </svg>
+            )}
+            <span>{zipping ? "Упаковка…" : "Проект ZIP"}</span>
+          </button>
           <button
             onClick={handleDownload}
             title="Скачать автономную версию одним HTML-файлом — работает без установки, просто откройте файл в браузере"
