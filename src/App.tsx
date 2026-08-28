@@ -66,10 +66,12 @@ export default function App() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  /* -------- выбор тела: клик = досье + подлёт камеры в 3D -------- */
+  /* -------- выбор тела --------
+   * Клик всегда открывает досье, но режим не меняет:
+   * на 2D-карте остаёмся на карте, а камера подлетает
+   * к планете только в 3D-режиме. */
   const handleSelect = (id: string) => {
     setSelectedId(id);
-    setViewMode("3d");
   };
 
   const stepSelection = (dir: 1 | -1) =>
@@ -89,11 +91,11 @@ export default function App() {
       } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
         e.preventDefault();
         const dir = e.key === "ArrowRight" ? 1 : -1;
+        /* листаем в текущем режиме: в 3D камера перелетает к новой планете */
         setSelectedId((prev) => {
           const idx = prev ? BODIES.findIndex((b) => b.id === prev) : -1;
           return BODIES[(idx + dir + BODIES.length) % BODIES.length].id;
         });
-        setViewMode("3d");
       } else if (e.key === "Escape") {
         if (selectedRef.current) setSelectedId(null); // первое Esc — закрыть досье
         else setViewMode("map"); // второе — вернуться к карте
@@ -114,7 +116,7 @@ export default function App() {
         : flyPhase === "free"
           ? "Кликните по планете, чтобы подлететь"
           : "ЛКМ — вращение · колесо — масштаб · ПКМ — перемещение"
-      : "Кликните по планете — откроется досье и камера подлетит к ней в 3D";
+      : "Кликните по планете — откроется досье · в режиме 3D камера подлетит к ней";
 
   return (
     <div className="relative h-dvh w-full overflow-hidden font-body text-mist-100">
@@ -123,25 +125,30 @@ export default function App() {
       {/* ---------- сцена: 2D-карта или 3D-полёт ---------- */}
       <div className="absolute inset-0">
         {viewMode === "map" ? (
-          <div key="map" className="view-in absolute inset-0">
-            <Orrery
-              simDays={simDays}
-              selectedId={selectedId}
-              hoveredId={hoveredId}
-              showOrbits={showOrbits}
-              showLabels={showLabels}
-              onSelect={handleSelect}
-              onHover={setHoveredId}
-            />
+          <div
+            className={`absolute inset-0 transition-transform duration-700 ease-out ${selectedBody ? "lg:-translate-x-[6vw]" : ""}`}
+          >
+            <div key="map" className="view-in absolute inset-0">
+              <Orrery
+                simDays={simDays}
+                selectedId={selectedId}
+                hoveredId={hoveredId}
+                showOrbits={showOrbits}
+                showLabels={showLabels}
+                onSelect={handleSelect}
+                onHover={setHoveredId}
+              />
+            </div>
           </div>
         ) : (
           <div
-            key="3d"
-            className={`view-in absolute inset-0 transition-transform duration-700 ease-out ${selectedBody ? "lg:-translate-x-[7vw]" : ""}`}
+            className={`absolute inset-0 transition-transform duration-700 ease-out ${selectedBody ? "lg:-translate-x-[7vw]" : ""}`}
           >
-            <Suspense fallback={null}>
-              <SolarSystem3D selectedId={selectedId} onSelect={handleSelect} showOrbits={showOrbits} onPhase={setFlyPhase} />
-            </Suspense>
+            <div key="3d" className="view-in absolute inset-0">
+              <Suspense fallback={null}>
+                <SolarSystem3D selectedId={selectedId} onSelect={handleSelect} showOrbits={showOrbits} onPhase={setFlyPhase} />
+              </Suspense>
+            </div>
           </div>
         )}
       </div>
