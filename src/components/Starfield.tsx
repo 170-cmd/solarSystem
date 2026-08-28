@@ -27,7 +27,6 @@ export default function Starfield() {
 
   return (
     <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-      {/* глубокие слои: тёплое свечение у центра и холодные туманности */}
       <div
         className="absolute inset-0"
         style={{
@@ -89,7 +88,6 @@ export default function Starfield() {
       <span className="shooting-star" style={{ top: "12%", right: "-8%" }} />
       <span className="shooting-star" style={{ top: "38%", right: "-6%", animationDelay: "11s", animationDuration: "17s" }} />
 
-      {/* виньетка */}
       <div
         className="absolute inset-0"
         style={{ background: "radial-gradient(115% 115% at 50% 50%, rgba(4,7,15,0) 55%, rgba(4,7,15,0.75) 100%)" }}

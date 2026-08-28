@@ -159,7 +159,6 @@ export const BODIES: Body[] = [
     size: 17,
     periodDays: 10759.22,
     startAngle: 330,
-    hasRing: true,
     diameterKm: 116460,
     distanceMkm: 1433.5,
     distanceAU: 9.58,
@@ -167,6 +166,7 @@ export const BODIES: Body[] = [
     moons: 146,
     tempText: "−139 °C",
     fact: "Средняя плотность Сатурна меньше плотности воды: в гигантском океане он бы не утонул, а плавал. Его кольца шириной 280 000 км состоят изо льда и камней.",
+    hasRing: true,
   },
   {
     id: "uranus",

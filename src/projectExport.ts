@@ -12,7 +12,6 @@ const files = import.meta.glob(
     "../tsconfig.json",
     "../index.html",
     "../README.md",
-    "../public/standalone.html",
     "./**/*.{ts,tsx,css}",
   ],
   { query: "?raw", import: "default", eager: true }

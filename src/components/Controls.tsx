@@ -1,16 +1,20 @@
 import type { ReactNode } from "react";
 import { BASE_DAYS_PER_SECOND, SPEED_OPTIONS } from "../data/bodies";
 
+export type ViewMode = "map" | "3d";
+
 interface ControlsProps {
   playing: boolean;
   speed: number;
   showOrbits: boolean;
   showLabels: boolean;
+  viewMode: ViewMode;
   onTogglePlay: () => void;
   onSpeed: (s: number) => void;
   onReset: () => void;
   onToggleOrbits: () => void;
   onToggleLabels: () => void;
+  onMode: (m: ViewMode) => void;
 }
 
 function ToggleChip({
@@ -45,14 +49,53 @@ export default function Controls({
   speed,
   showOrbits,
   showLabels,
+  viewMode,
   onTogglePlay,
   onSpeed,
   onReset,
   onToggleOrbits,
   onToggleLabels,
+  onMode,
 }: ControlsProps) {
   return (
-    <div className="fade-up pointer-events-auto flex items-center gap-1.5 rounded-2xl border border-white/10 bg-space-900/85 px-2.5 py-2 shadow-[0_18px_50px_rgba(0,0,0,0.55)] backdrop-blur-xl md:gap-2.5 md:px-4" style={{ animationDelay: "0.25s" }}>
+    <div
+      className="fade-up pointer-events-auto flex items-center gap-1.5 rounded-2xl border border-white/10 bg-space-900/85 px-2.5 py-2 shadow-[0_18px_50px_rgba(0,0,0,0.55)] backdrop-blur-xl md:gap-2.5 md:px-4"
+      style={{ animationDelay: "0.25s" }}
+    >
+      {/* режим просмотра */}
+      <div className="flex items-center gap-0.5 rounded-xl bg-white/[0.05] p-1">
+        <button
+          onClick={() => onMode("map")}
+          aria-pressed={viewMode === "map"}
+          title="Плоская схема (карта)"
+          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-extrabold transition-all active:scale-90 ${
+            viewMode === "map" ? "bg-white/12 text-mist-100 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]" : "text-mist-500 hover:text-mist-300"
+          }`}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none" />
+            <ellipse cx="12" cy="12" rx="10" ry="4.2" />
+          </svg>
+          Карта
+        </button>
+        <button
+          onClick={() => onMode("3d")}
+          aria-pressed={viewMode === "3d"}
+          title="Трёхмерный полёт"
+          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-extrabold transition-all active:scale-90 ${
+            viewMode === "3d" ? "bg-solar-400/20 text-solar-300 shadow-[inset_0_0_0_1px_rgba(242,181,68,0.45)]" : "text-mist-500 hover:text-mist-300"
+          }`}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2.5 21 7v10l-9 4.5L3 17V7l9-4.5z" />
+            <path d="M3 7l9 4.5L21 7M12 11.5V21.5" opacity="0.6" />
+          </svg>
+          3D
+        </button>
+      </div>
+
+      <span className="hidden h-6 w-px bg-white/10 sm:block" />
+
       {/* play / pause */}
       <button
         onClick={onTogglePlay}
@@ -92,8 +135,6 @@ export default function Controls({
           </button>
         ))}
       </div>
-
-      <span className="hidden h-6 w-px bg-white/10 md:block" />
 
       {/* сброс времени */}
       <button

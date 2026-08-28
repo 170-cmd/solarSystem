@@ -1,8 +1,4 @@
-import { useMemo } from "react";
 import { BODIES, type Body } from "../data/bodies";
-
-const C = 380; // центр viewBox
-const TAU = Math.PI * 2;
 
 interface OrreryProps {
   simDays: number;
@@ -14,21 +10,21 @@ interface OrreryProps {
   onHover: (id: string | null) => void;
 }
 
-function angleOf(b: Body, simDays: number): number {
-  return (b.startAngle * Math.PI) / 180 - (TAU * simDays) / b.periodDays;
-}
+const BELT_SEEDS: { r: number; a: number }[] = (() => {
+  const arr: { r: number; a: number }[] = [];
+  let s = 97;
+  const rnd = () => {
+    s = (s * 16807) % 2147483647;
+    return s / 2147483647;
+  };
+  for (let i = 0; i < 240; i++) {
+    arr.push({ r: 184 + rnd() * 24, a: rnd() * Math.PI * 2 });
+  }
+  return arr;
+})();
 
-function posOf(b: Body, simDays: number): { x: number; y: number } {
-  const a = angleOf(b, simDays);
-  return { x: C + b.orbitR * Math.cos(a), y: C + b.orbitR * Math.sin(a) };
-}
-
-interface Asteroid {
-  r: number;
-  a: number;
-  s: number;
-  o: number;
-}
+const angleFor = (b: Body, days: number) =>
+  b.periodDays === 0 ? 0 : ((b.startAngle + (days / b.periodDays) * 360) * Math.PI) / 180;
 
 export default function Orrery({
   simDays,
@@ -39,215 +35,187 @@ export default function Orrery({
   onSelect,
   onHover,
 }: OrreryProps) {
-  const asteroids = useMemo<Asteroid[]>(() => {
-    const arr: Asteroid[] = [];
-    for (let i = 0; i < 130; i++) {
-      arr.push({
-        r: 184 + Math.random() * 20,
-        a: Math.random() * TAU,
-        s: 0.5 + Math.random() * 1.1,
-        o: 0.12 + Math.random() * 0.38,
-      });
-    }
-    return arr;
-  }, []);
-
-  const planets = BODIES.filter((b) => b.id !== "sun");
   const sun = BODIES[0];
-  const earth = BODIES.find((b) => b.id === "earth")!;
-  const earthPos = posOf(earth, simDays);
-  const moonAngle = -(TAU * simDays) / 27.32;
-  const moonPos = {
-    x: earthPos.x + 16.5 * Math.cos(moonAngle),
-    y: earthPos.y + 16.5 * Math.sin(moonAngle),
-  };
-
-  const beltAngle = (simDays / 1700) * 360;
+  const planets = BODIES.slice(1);
 
   return (
     <svg
-      viewBox="0 0 760 760"
-      className="orrery-in h-full w-full select-none"
+      viewBox="0 0 1000 760"
+      className="absolute inset-0 h-full w-full"
+      preserveAspectRatio="xMidYMid meet"
       role="img"
-      aria-label="Модель Солнечной системы с восемью планетами"
-      onMouseLeave={() => onHover(null)}
+      aria-label="Схема Солнечной системы"
     >
       <defs>
-        {BODIES.map((b) => (
-          <radialGradient key={b.id} id={`grad-${b.id}`} cx="35%" cy="30%" r="85%">
-            <stop offset="0%" stopColor={b.hi} />
-            <stop offset="100%" stopColor={b.color} />
+        <radialGradient id="sunGrad" cx="42%" cy="38%" r="75%">
+          <stop offset="0%" stopColor="#fff8dc" />
+          <stop offset="38%" stopColor="#ffd37e" />
+          <stop offset="75%" stopColor="#f2963c" />
+          <stop offset="100%" stopColor="#c96a1c" />
+        </radialGradient>
+        <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="rgba(255,190,90,0.5)" />
+          <stop offset="55%" stopColor="rgba(255,150,60,0.16)" />
+          <stop offset="100%" stopColor="rgba(255,140,50,0)" />
+        </radialGradient>
+        {planets.map((p) => (
+          <radialGradient key={p.id} id={`grad-${p.id}`} cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stopColor={p.hi} />
+            <stop offset="55%" stopColor={p.color} />
+            <stop offset="100%" stopColor="#0a0f1c" />
           </radialGradient>
         ))}
-        <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(255,196,96,0.6)" />
-          <stop offset="45%" stopColor="rgba(255,160,60,0.22)" />
-          <stop offset="100%" stopColor="rgba(255,160,60,0)" />
-        </radialGradient>
       </defs>
 
-      {/* орбиты */}
-      {planets.map((b) => {
-        const active = b.id === selectedId || b.id === hoveredId;
-        const visible = showOrbits || active;
-        if (!visible) return null;
+      {/* Пояс астероидов */}
+      <g opacity={0.5}>
+        {BELT_SEEDS.map((s, i) => (
+          <circle
+            key={i}
+            cx={500 + Math.cos(s.a) * s.r}
+            cy={380 + Math.sin(s.a) * s.r}
+            r={i % 7 === 0 ? 1.1 : 0.7}
+            fill="#8b93a5"
+          />
+        ))}
+      </g>
+
+      {/* Орбиты */}
+      {planets.map((p) => {
+        const active = selectedId === p.id || hoveredId === p.id;
         return (
           <circle
-            key={`orbit-${b.id}`}
-            className="orbit-ring"
-            cx={C}
-            cy={C}
-            r={b.orbitR}
+            key={`orbit-${p.id}`}
+            cx={500}
+            cy={380}
+            r={p.orbitR}
             fill="none"
-            stroke={active ? b.color : "#93a3bf"}
-            strokeOpacity={active ? (b.id === selectedId ? 0.5 : 0.3) : 0.12}
-            strokeWidth={b.id === selectedId ? 1.4 : 1}
+            className="orbit-ring"
+            stroke={active ? "#f2b544" : "#9db4d8"}
+            strokeOpacity={active ? 0.55 : showOrbits ? 0.16 : 0}
+            strokeWidth={active ? 1.3 : 1}
+            strokeDasharray={showOrbits || active ? undefined : "0 100000"}
           />
         );
       })}
 
-      {/* пояс астероидов */}
-      <g transform={`rotate(${beltAngle % 360} ${C} ${C})`}>
-        {asteroids.map((ast, i) => (
-          <circle
-            key={i}
-            cx={C + ast.r * Math.cos(ast.a)}
-            cy={C + ast.r * Math.sin(ast.a)}
-            r={ast.s}
-            fill="#93a3bf"
-            opacity={ast.o}
-          />
-        ))}
-      </g>
-
       {/* Солнце */}
       <g
-        className={`planet-g ${sun.id === selectedId || sun.id === hoveredId ? "is-active" : ""}`}
-        style={{ cursor: "pointer" }}
+        className="planet-g cursor-pointer"
         onClick={() => onSelect(sun.id)}
         onMouseEnter={() => onHover(sun.id)}
         onMouseLeave={() => onHover(null)}
       >
-        <circle className="sun-corona" cx={C} cy={C} r={68} fill="url(#sunGlow)" />
+        <circle cx={500} cy={380} r={120} fill="url(#sunGlow)" className="sun-corona" />
         <circle
-          className="sun-flare"
-          cx={C}
-          cy={C}
-          r={42}
+          cx={500}
+          cy={380}
+          r={58}
           fill="none"
-          stroke="rgba(255,196,96,0.3)"
-          strokeWidth={1.4}
-          strokeDasharray="1 9"
-          strokeLinecap="round"
+          stroke="rgba(255,211,126,0.35)"
+          strokeWidth={1}
+          strokeDasharray="3 9"
+          className="sun-flare"
         />
-        <circle cx={C} cy={C} r={44} fill="transparent" />
-        <circle className="planet-vis" cx={C} cy={C} r={sun.size} fill={`url(#grad-${sun.id})`} />
-        {sun.id === selectedId && (
+        <circle cx={500} cy={380} r={sun.size} fill="url(#sunGrad)" className="planet-vis" />
+        {selectedId === sun.id && (
           <circle
-            className="select-ring"
-            cx={C}
-            cy={C}
-            r={sun.size + 12}
+            cx={500}
+            cy={380}
+            r={sun.size + 8}
             fill="none"
-            stroke={sun.color}
-            strokeOpacity={0.9}
-            strokeWidth={1.2}
-            strokeDasharray="3 8"
-            strokeLinecap="round"
+            stroke="#f2b544"
+            strokeWidth={1.4}
+            strokeDasharray="4 7"
+            className="select-ring"
           />
         )}
         {showLabels && (
-          <text className="orrery-label" x={C} y={C + sun.size + 26} textAnchor="middle">
-            {sun.name}
+          <text x={500} y={380 + sun.size + 24} textAnchor="middle" className="orrery-label">
+            Солнце
           </text>
         )}
       </g>
 
-      {/* Луна Земли */}
-      <line
-        x1={earthPos.x}
-        y1={earthPos.y}
-        x2={moonPos.x}
-        y2={moonPos.y}
-        stroke="#93a3bf"
-        strokeOpacity={0.14}
-        strokeWidth={0.7}
-      />
-      <circle cx={moonPos.x} cy={moonPos.y} r={2.4} fill="#c9cedb" />
-
-      {/* планеты */}
-      {planets.map((b) => {
-        const { x, y } = posOf(b, simDays);
-        const active = b.id === selectedId || b.id === hoveredId;
-        const showLabel = showLabels || active;
-        const hitR = Math.max(b.size + 8, 14);
+      {/* Планеты */}
+      {planets.map((p) => {
+        const ang = angleFor(p, simDays);
+        const x = 500 + Math.cos(ang) * p.orbitR;
+        const y = 380 + Math.sin(ang) * p.orbitR;
+        const active = selectedId === p.id;
+        const hit = Math.max(p.size + 7, 14);
         return (
           <g
-            key={b.id}
-            className={`planet-g ${active ? "is-active" : ""}`}
-            transform={`translate(${x} ${y})`}
-            style={{ cursor: "pointer" }}
-            onClick={() => onSelect(b.id)}
-            onMouseEnter={() => onHover(b.id)}
+            key={p.id}
+            className={`planet-g cursor-pointer ${active ? "is-active" : ""}`}
+            onClick={() => onSelect(p.id)}
+            onMouseEnter={() => onHover(p.id)}
             onMouseLeave={() => onHover(null)}
           >
-            {b.hasRing && (
-              <ellipse
-                rx={b.size * 2.15}
-                ry={b.size * 0.6}
-                transform="rotate(-18)"
-                fill="none"
-                stroke="#cdb27e"
-                strokeOpacity={0.4}
-                strokeWidth={5}
-              />
-            )}
-            <circle r={hitR} fill="transparent" />
-            <circle
-              className="planet-vis"
-              r={b.size}
-              fill={`url(#grad-${b.id})`}
-              stroke="rgba(255,255,255,0.16)"
-              strokeWidth={0.8}
-            />
-            {b.hasRing && (
-              <>
-                <path
-                  d={`M ${-b.size * 2.15} 0 A ${b.size * 2.15} ${b.size * 0.6} 0 0 0 ${b.size * 2.15} 0`}
-                  transform="rotate(-18)"
-                  fill="none"
-                  stroke="#ecd7a4"
-                  strokeOpacity={0.85}
-                  strokeWidth={5}
-                  strokeLinecap="round"
-                />
-                <path
-                  d={`M ${-b.size * 1.6} 0 A ${b.size * 1.6} ${b.size * 0.44} 0 0 0 ${b.size * 1.6} 0`}
-                  transform="rotate(-18)"
-                  fill="none"
-                  stroke="#b39a63"
-                  strokeOpacity={0.6}
-                  strokeWidth={2}
-                />
-              </>
-            )}
-            {b.id === selectedId && (
+            {active && (
               <circle
-                className="select-ring"
-                r={b.size + (b.hasRing ? 9 : 7)}
+                cx={x}
+                cy={y}
+                r={p.size + 8}
                 fill="none"
-                stroke={b.color}
-                strokeOpacity={0.95}
-                strokeWidth={1.2}
-                strokeDasharray="3 7"
-                strokeLinecap="round"
+                stroke="#f2b544"
+                strokeWidth={1.3}
+                strokeDasharray="3.5 6.5"
+                className="select-ring"
               />
             )}
-            {showLabel && (
-              <text className="orrery-label" y={-(b.size + (b.hasRing ? 16 : 12))} textAnchor="middle">
-                {b.name}
+
+            {/* Сатурн: задняя половина кольца */}
+            {p.hasRing && (
+              <ellipse
+                cx={x}
+                cy={y}
+                rx={p.size * 2.15}
+                ry={p.size * 0.72}
+                fill="none"
+                stroke="rgba(232,209,160,0.55)"
+                strokeWidth={p.size * 0.34}
+                transform={`rotate(-18 ${x} ${y})`}
+              />
+            )}
+
+            <g className="planet-vis">
+              <circle cx={x} cy={y} r={p.size} fill={`url(#grad-${p.id})`} />
+              {p.id === "earth" && <circle cx={x - p.size * 0.3} cy={y - p.size * 0.28} r={p.size * 0.22} fill="rgba(255,255,255,0.35)" />}
+              {p.id === "jupiter" && (
+                <ellipse cx={x + p.size * 0.32} cy={y + p.size * 0.42} rx={p.size * 0.3} ry={p.size * 0.18} fill="rgba(168,64,42,0.7)" />
+              )}
+              {p.id === "neptune" && (
+                <ellipse cx={x - p.size * 0.2} cy={y + p.size * 0.15} rx={p.size * 0.34} ry={p.size * 0.16} fill="rgba(10,20,70,0.5)" />
+              )}
+            </g>
+
+            {/* Сатурн: передняя половина кольца */}
+            {p.hasRing && (
+              <path
+                d={`M ${x - p.size * 2.15} ${y} A ${p.size * 2.15} ${p.size * 0.72} 0 0 0 ${x + p.size * 2.15} ${y}`}
+                fill="none"
+                stroke="rgba(240,220,174,0.8)"
+                strokeWidth={p.size * 0.34}
+                transform={`rotate(-18 ${x} ${y})`}
+              />
+            )}
+
+            {/* Луна у Земли */}
+            {p.id === "earth" && (() => {
+              const ma = simDays / 27.32 * Math.PI * 2;
+              return (
+                <circle cx={x + Math.cos(ma) * (p.size + 7)} cy={y + Math.sin(ma) * (p.size + 7)} r={2} fill="#c9c5bd" />
+              );
+            })()}
+
+            {showLabels && (
+              <text x={x} y={y + p.size + 16} textAnchor="middle" className="orrery-label">
+                {p.name}
               </text>
             )}
+
+            <circle cx={x} cy={y} r={hit} fill="transparent" />
           </g>
         );
       })}
